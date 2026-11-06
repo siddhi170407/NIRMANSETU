@@ -1,0 +1,42 @@
+# Local environment values and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Django runtime files
+*.sqlite3
+*.sqlite3-journal
+media/
+staticfiles/
+*.log
+
+# JavaScript / Vite
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
