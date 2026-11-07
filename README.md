@@ -1,22 +1,29 @@
 # NirmanSetu
 
 NirmanSetu is a cloud-based Public Infrastructure Project Monitoring System.
-This repository currently contains the application foundation only: a Django REST
-Framework backend, a React homepage, and local development configuration.
+This repository contains a Django REST Framework backend foundation and the
+Lovable-generated NirmanSetu React interface, integrated into `frontend/`.
+
+The backend now includes the PostgreSQL ORM foundation. See
+[database design](docs/database-design.md), the [ER diagram](docs/er-diagram.md),
+the [schema snapshot](database/schema.sql), and [SQL examples](database/queries.sql).
 
 The planned roles are Administrator, Project Manager, Inspector, Contractor, and
 Auditor. The planned lifecycle is:
 
 **Project → Contract → Milestones → Inspection → Payment → Completion**
 
-Roles, authentication flows, project records, contracts, inspections, payments,
-and other business features are not implemented yet. Azure hosting, Azure Blob
-Storage, and Power BI are reserved for later phases.
+The frontend demonstrates these workflows using the original Lovable sample
+data. The backend has database models and Django authentication tables; frontend
+authentication, authorization, and business API integration are still pending.
+Azure hosting, Azure Blob Storage, and Power BI are reserved for
+later phases. See [frontend/README.md](frontend/README.md) for source provenance
+and integration details.
 
 ## Stack
 
 - Backend: Python, Django 5.2 LTS, Django REST Framework
-- Frontend: React, Vite, Tailwind CSS (Vite plugin)
+- Frontend: React, TypeScript, Vite, TanStack Router, Tailwind CSS, Radix UI, Recharts
 - Database: PostgreSQL, configured through environment variables
 
 ## Repository layout
@@ -26,17 +33,20 @@ NIRMANSETU/
 ├── backend/
 │   ├── config/           # Django settings, root URLs, ASGI and WSGI entry points
 │   ├── core/             # Public health endpoint and database-free tests
+│   ├── infrastructure/   # Domain models, migrations, PostgreSQL guards, and tests
 │   ├── .env.example      # Local Django and PostgreSQL settings; no real credentials
 │   ├── manage.py         # Django command-line entry point
 │   └── requirements.txt  # Python dependencies
 ├── frontend/
-│   ├── src/              # React homepage and Tailwind stylesheet
+│   ├── src/              # Imported routes, components, styles, assets, and sample data
 │   ├── .env.example      # Public API path and local development proxy target
 │   ├── index.html        # HTML entry point
 │   ├── package.json      # Dependencies and dev/build/lint scripts
 │   ├── package-lock.json # Reproducible npm dependency versions
-│   ├── .oxlintrc.json    # JavaScript and React lint rules (Oxlint)
-│   └── vite.config.js    # React, Tailwind, and /api development proxy
+│   ├── eslint.config.js  # TypeScript/React lint rules from the source
+│   └── vite.config.ts    # Router, React, Tailwind, and /api development proxy
+├── database/             # PostgreSQL schema snapshot and executable SQL examples
+├── docs/                 # Database design and Mermaid ER diagram
 ├── .gitattributes        # Consistent text line endings across platforms
 └── .gitignore           # Excludes local secrets, environments, and generated files
 ```
@@ -83,7 +93,7 @@ The example Django key is a public development placeholder, usable only with
 settings reject the example key with debug disabled. These are local setup
 settings, not a production deployment configuration.
 
-Apply Django's built-in migrations and start the API:
+Apply Django's built-in and infrastructure migrations and start the API:
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
@@ -100,7 +110,9 @@ Health endpoint: <http://127.0.0.1:8000/api/health/>
 This public, read-only endpoint checks API liveness only. It does not query
 PostgreSQL or confirm that any external service is ready. Django's normal
 `runserver` startup and `migrate` commands still need the configured database.
-There are no project-specific database models or migrations yet.
+The `infrastructure` app provides project, contract, milestone, inspection,
+payment, contractor, document, and activity-log models with three migrations.
+The five roles use Django's existing auth groups; business APIs are still pending.
 
 ## Frontend setup
 
@@ -113,12 +125,14 @@ Copy-Item .env.example .env
 npm.cmd run dev
 ```
 
-Open <http://localhost:5173>. The homepage displays NirmanSetu and a link to the
-health API. Vite forwards `/api` requests to `http://127.0.0.1:8000` by default,
-so local requests use the same browser origin without a separate CORS package.
-Start both applications before following the API link.
+Open <http://127.0.0.1:5173>. The frontend displays the imported Lovable dashboard
+and pages using their existing sample data. Keep the terminal running while you
+use the local URL. These demo pages run independently of Django and PostgreSQL.
+Vite forwards `/api` requests to `http://127.0.0.1:8000` by default, so local API
+requests use the same browser origin without a separate CORS package. The Django
+health endpoint remains available at `/api/health/` when the backend is running.
 
-`VITE_API_BASE_URL` is a public browser value (default `/api`).
+`VITE_API_BASE_URL` is reserved for future API integration (default `/api`).
 `API_PROXY_TARGET` configures only the Vite development proxy. Never put secrets
 in `VITE_*` variables: they are included in browser assets. Restart Vite after
 changing its environment variables. Production hosting will need an `/api`
@@ -141,13 +155,22 @@ PostgreSQL server. Once PostgreSQL is configured, also run:
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py migrate --check
+.\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
+.\.venv\Scripts\python.exe manage.py test --noinput
 ```
+
+The full suite needs PostgreSQL and permission to create a separate test database.
+Database foundation verification passed all 19 tests in an isolated PostgreSQL
+18.6 cluster on 7 November 2026. Migrations, schema restoration, SQL examples,
+and trigger checks also passed; see [verification details](docs/database-design.md).
 
 Frontend checks, from `frontend/`:
 
 ```powershell
 npm.cmd run lint
 npm.cmd run build
+npm.cmd test
+npm.cmd run typecheck
 ```
 
 The production build is generated in the ignored `frontend/dist/` directory.
